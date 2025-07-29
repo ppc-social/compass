@@ -1,0 +1,22 @@
+[project]
+name = "compass-app"
+version = "0.1.0"
+description = "Discord bot + web app for https://thecompass.diy"
+authors = [
+    {name = "Sebastian Moser",email = "sebastian@c2vi.dev"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "discord-py (>=2.5.2,<3.0.0)",
+    "mariadb (>=1.1.13,<2.0.0)",
+    "sqlalchemy (>=2.0.41,<3.0.0)",
+]
+
+[tool.poetry]
+packages = []
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
