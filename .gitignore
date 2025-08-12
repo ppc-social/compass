@@ -1,2 +1,6 @@
 
 __pycache__
+/gitignore
+.env
+.env.development
+.env.production

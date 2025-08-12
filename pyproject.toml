@@ -6,11 +6,16 @@ authors = [
     {name = "Sebastian Moser",email = "sebastian@c2vi.dev"}
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "discord-py (>=2.5.2,<3.0.0)",
     "mariadb (>=1.1.13,<2.0.0)",
     "sqlalchemy (>=2.0.41,<3.0.0)",
+    "fastapi (>=0.116.1,<0.117.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "asyncmy (>=0.2.10,<0.3.0)",
+    "uvicorn (>=0.35.0,<0.36.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
 ]
 
 [tool.poetry]
