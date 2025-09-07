@@ -20,7 +20,7 @@ import logging
 from el import terminal
 from el.observable import Observable, filters
 
-from compass_app.dcbot.bot import DiscordBot
+from compass_app.dcbot import DiscordBot
 from compass_app.database import CompassDB
 from compass_app.webserver import CompassWeb
 from compass_app.auth import CompassAuth
@@ -64,7 +64,7 @@ class CompassApp:
             self.auth.run(),
             self.bot.run(),
             self.cli.run(),
-            
+
             self.sleep.run(),
             self.habitica.run(),
         )

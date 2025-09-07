@@ -18,14 +18,18 @@ from discord.ext.commands.context import Context
 from el.observable import filters
 from el.async_tools import synchronize
 
+from compass_app.accountability.cog import AccountabilityCommands
+
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
 
 _log = logging.getLogger(__name__)
 
 
+
 class DiscordBot(commands.Bot):
     TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+    GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
     def __init__(self, app: "CompassApp", **kwargs) -> None:
         self._app = app
@@ -44,18 +48,27 @@ class DiscordBot(commands.Bot):
             self._app.exited >> filters.call_if_true(synchronize(self.close))
             await self.start(self.TOKEN)
 
+    async def sync(self) -> int:
+        """Syncs the commands to the target guild"""
+        guild = self.get_guild(self.GUILD_ID)
+        self.tree.copy_global_to(guild=guild)
+        return len(await self.tree.sync(guild=guild))
+
+    async def sync_global(self) -> int:
+        """Syncs the commands globally"""
+        return len(await self.tree.sync())
+        
     @typing.override
     async def on_ready(self):
         _log.info(f"logged in as {self.user}")
 
-        #await self.add_cog(AdminCommands(self))
-        #await self.add_cog(AmogusCommands(self))
+        await self.add_cog(AccountabilityCommands(self))
 
     @typing.override
     async def on_message(self, message: discord.Message) -> None:
         if message.author == self.user:
             return
 
-        if message.content.startswith('$hello'):
+        if message.content.startswith('Hello Loadstone'):
             await message.channel.send('Hello to the Compass community!')
 

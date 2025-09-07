@@ -38,3 +38,9 @@ class CompassCLI:
                 case "q" | "quit":
                     self._app.exited.value = True
                     return
+                case "s" | "sync":
+                    count = await self._app.bot.sync()
+                    _term.print(f"Synced {count} commands to target guild.")
+                case "gs" | "gsync":
+                    count = await self._app.bot.sync_global()
+                    _term.print(f"Synced {count} commands globally.")
