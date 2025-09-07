@@ -1,11 +1,25 @@
+"""
+The Compass Community © 2025 - now
+www.thecompass.diy
+07.09.25, 18:49
 
+User authentication portal to access the web-app.
+"""
 
 import os
-from fastapi import Depends, HTTPException
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi.responses import RedirectResponse
-from urllib.parse import urlencode
+import logging
+import typing
 import httpx
+
+from urllib.parse import urlencode
+from fastapi import Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+if typing.TYPE_CHECKING:
+    from compass_app.main import CompassApp
+
+_log = logging.getLogger(__name__)
 
 
 class CompassAuth():
@@ -17,8 +31,9 @@ class CompassAuth():
     DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
     DISCORD_API_URL = "https://discord.com/api/users/@me"
 
-    def __init__(self, app):
-
+    def __init__(self, app: "CompassApp"):
+        self._app = app
+        
         @app.web.on_event("startup")
         async def startup():
             async with app.db.engine.begin() as conn:
@@ -84,3 +99,6 @@ class CompassAuth():
             await app.db.session.commit()
 
             return {"message": "Logged in successfully", "user": user_data}
+
+    async def run(self) -> None:
+        ...

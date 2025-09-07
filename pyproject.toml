@@ -3,10 +3,11 @@ name = "compass-app"
 version = "0.1.0"
 description = "Discord bot + web app for https://thecompass.diy"
 authors = [
-    {name = "Sebastian Moser",email = "sebastian@c2vi.dev"}
+    {name = "Sebastian Moser",email = "sebastian@c2vi.dev"},
+    {name = "melektron",email = "matteo@elektron.work"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "discord-py (>=2.5.2,<3.0.0)",
     "mariadb (>=1.1.13,<2.0.0)",
@@ -16,6 +17,7 @@ dependencies = [
     "asyncmy (>=0.2.10,<0.3.0)",
     "uvicorn (>=0.35.0,<0.36.0)",
     "dotenv (>=0.9.9,<0.10.0)",
+    "el-std-py (>=0.4.0,<0.5.0)",
 ]
 
 [tool.poetry]

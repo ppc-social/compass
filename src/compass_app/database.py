@@ -1,9 +1,22 @@
+"""
+The Compass Community © 2025 - now
+www.thecompass.diy
+07.09.25, 18:50
+
+Database subsystem for data storage
+"""
+
+import os
+import typing
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-
 from sqlalchemy import Column, Integer, String
-import os
+from el.async_tools import synchronize
+
+if typing.TYPE_CHECKING:
+    from compass_app.main import CompassApp
+
 
 class CompassDB():
 
@@ -28,6 +41,9 @@ class CompassDB():
         async with SessionLocal() as session:
             yield session
 
-    def __init__(self, app):
-        pass
+    def __init__(self, app: "CompassApp"):
+        self._app = app
+
+    async def run(self) -> None:
+        ...
 
