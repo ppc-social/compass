@@ -10,11 +10,6 @@ Compass Bot/Application
 from el import terminal
 _term = terminal.setup_simple_terminal()
 
-# load environment for other modules to use
-from dotenv import load_dotenv
-from pathlib import Path
-load_dotenv(dotenv_path=Path(".env.development"), override=True)
-
 import asyncio
 import logging
 from el import terminal

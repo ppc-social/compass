@@ -20,6 +20,8 @@ from urllib.parse import urlencode
 from el.observable import filters
 from el.async_tools import synchronize
 
+from compass_app.config import CONFIG
+
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
 
@@ -28,8 +30,6 @@ _log = logging.getLogger(__name__)
 
 
 class CompassWeb(FastAPI):
-    WEB_HOST = os.getenv("WEB_HOST")
-    WEB_PORT = os.getenv("WEB_PORT", "80")
     
     def __init__(self, app: "CompassApp"):
         super().__init__()
@@ -42,8 +42,8 @@ class CompassWeb(FastAPI):
     async def run(self) -> None:
         config = uvicorn.Config(
             self, 
-            host=self.WEB_HOST,
-            port=int(self.WEB_PORT), 
+            host=CONFIG.WEB_HOST,
+            port=CONFIG.WEB_PORT, 
             log_level="info"
         )
         server = uvicorn.Server(config)

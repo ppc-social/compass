@@ -14,14 +14,15 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String
 from el.async_tools import synchronize
 
+from compass_app.config import CONFIG
+
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
 
 
 class CompassDB():
 
-    MARIADB_URL = os.getenv("MARIADB_URL")
-    engine = create_async_engine(MARIADB_URL, echo=True)
+    engine = create_async_engine(CONFIG.MARIADB_URL, echo=True)
     SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     Base = declarative_base()
     session = SessionLocal()

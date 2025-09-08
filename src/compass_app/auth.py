@@ -16,6 +16,8 @@ from fastapi import Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
+from compass_app.config import CONFIG
+
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
 
@@ -23,9 +25,6 @@ _log = logging.getLogger(__name__)
 
 
 class CompassAuth():
-    DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
-    DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
-    DISCORD_REDIRECT_URL = os.getenv("DISCORD_REDIRECT_URL")
 
     DISCORD_AUTH_URL = "https://discord.com/api/oauth2/authorize"
     DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
@@ -42,8 +41,8 @@ class CompassAuth():
         @app.web.get("/login")
         async def login():
             params = {
-                "client_id": self.DISCORD_CLIENT_ID,
-                "redirect_uri": self.DISCORD_REDIRECT_URL,
+                "client_id": CONFIG.DISCORD_CLIENT_ID,
+                "redirect_uri": CONFIG.DISCORD_REDIRECT_URL,
                 "response_type": "code",
                 "scope": "identify email",
             }
@@ -53,11 +52,11 @@ class CompassAuth():
         async def callback(code: str):
             # Exchange code for token
             data = {
-                "client_id": self.DISCORD_CLIENT_ID,
-                "client_secret": self.DISCORD_CLIENT_SECRET,
+                "client_id": CONFIG.DISCORD_CLIENT_ID,
+                "client_secret": CONFIG.DISCORD_CLIENT_SECRET,
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": self.DISCORD_REDIRECT_URL,
+                "redirect_uri": CONFIG.DISCORD_REDIRECT_URL,
             }
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
