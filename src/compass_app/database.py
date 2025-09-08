@@ -1,14 +1,28 @@
+"""
+The Compass Community © 2025 - now
+www.thecompass.diy
+07.09.25, 18:50
+
+Database subsystem for data storage
+"""
+
+import os
+import typing
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-
 from sqlalchemy import Column, Integer, String
-import os
+from el.async_tools import synchronize
+
+from compass_app.config import CONFIG
+
+if typing.TYPE_CHECKING:
+    from compass_app.main import CompassApp
+
 
 class CompassDB():
 
-    MARIADB_URL = os.getenv("MARIADB_URL")
-    engine = create_async_engine(MARIADB_URL, echo=True)
+    engine = create_async_engine(CONFIG.MARIADB_URL, echo=True)
     SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
     Base = declarative_base()
     session = SessionLocal()
@@ -28,6 +42,9 @@ class CompassDB():
         async with SessionLocal() as session:
             yield session
 
-    def __init__(self, app):
-        pass
+    def __init__(self, app: "CompassApp"):
+        self._app = app
+
+    async def run(self) -> None:
+        ...
 
