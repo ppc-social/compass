@@ -24,7 +24,7 @@ class Config(pydantic.BaseModel):
     DISCORD_REDIRECT_URL: str
     WEB_HOST: str
     WEB_PORT: int
-    MARIADB_URL: str
+    DB_URL: str
     DISABLE_DB_IN_SHELL: bool
 
     ACCOUNTABILITY_CHANNEL_ID: int
@@ -38,7 +38,7 @@ CONFIG = Config(
     DISCORD_REDIRECT_URL        = os.getenv("DISCORD_REDIRECT_URL"),
     WEB_HOST                    = os.getenv("WEB_HOST"),
     WEB_PORT                    = os.getenv("WEB_PORT"),
-    MARIADB_URL                 = os.getenv("MARIADB_URL"),
+    DB_URL                      = os.getenv("DB_URL"),
     DISABLE_DB_IN_SHELL         = os.getenv("DISABLE_DB_IN_SHELL"),
     
     ACCOUNTABILITY_CHANNEL_ID   = os.getenv("ACCOUNTABILITY_CHANNEL_ID"),

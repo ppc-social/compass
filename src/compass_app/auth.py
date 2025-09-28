@@ -7,16 +7,17 @@ User authentication portal to access the web-app.
 """
 
 import os
-import logging
 import typing
-import httpx
+import logging
 
+import httpx
 from urllib.parse import urlencode
 from fastapi import Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import select
 
 from compass_app.config import CONFIG
+from compass_app.database import User
 
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
@@ -32,11 +33,6 @@ class CompassAuth():
 
     def __init__(self, app: "CompassApp"):
         self._app = app
-        
-        @app.web.on_event("startup")
-        async def startup():
-            async with app.db.engine.begin() as conn:
-                await conn.run_sync(app.db.Base.metadata.create_all)
 
         @app.web.get("/login")
         async def login():
@@ -77,25 +73,23 @@ class CompassAuth():
                 user_data = user_resp.json()
 
             # Store user in DB
-            existing_user = await app.db.session.execute(
-                app.db.User.__table__.select().where(app.db.User.discord_id == str(user_data["id"]))
-            )
-            user = existing_user.scalar_one_or_none()
-
-            if user:
-                user.access_token = access_token
-            else:
-                user = app.db.User(
-                    discord_id=str(user_data["id"]),
-                    username=user_data["username"],
-                    discriminator=user_data["discriminator"],
-                    avatar=user_data["avatar"],
-                    access_token=access_token,
-                    refresh_token=token_data.get("refresh_token")
+            async with app.db.session() as session:
+                user = await session.scalar(
+                    select(User).where(User.discord_id == user_data["id"])
                 )
-                app.db.session.add(user)
 
-            await app.db.session.commit()
+                if user:
+                    user.access_token = access_token
+                else:
+                    user = User(
+                        discord_id=user_data["id"],
+                        username=user_data["username"],
+                        discriminator=user_data["discriminator"],
+                        avatar=user_data["avatar"],
+                        access_token=access_token,
+                        refresh_token=token_data.get("refresh_token")
+                    )
+                    session.add(user)
 
             return {"message": "Logged in successfully", "user": user_data}
 

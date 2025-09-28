@@ -13,9 +13,10 @@ import logging
 import discord
 from discord import ChannelType
 from discord.ext import commands
-
 from el.async_tools import synchronize
+from sqlalchemy import select
 
+from compass_app.database import User
 from compass_app.config import CONFIG
 
 if typing.TYPE_CHECKING:
@@ -34,6 +35,9 @@ class AccountabilityCommands(
         self._app = app
         self._app.bot.on_message_cb.register(self.on_message)
 
+        ## create webhooks for the accountability messages if they don't exist yet
+        #self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID).webhooks
+
     @synchronize
     async def on_message(self, message: discord.Message) -> None:
         # we are only interested in messages of threads in the accountability channel
@@ -43,7 +47,17 @@ class AccountabilityCommands(
         if channel is None or channel.id != CONFIG.ACCOUNTABILITY_CHANNEL_ID:
             return
         
-        _log.info(f"Received accountability message in '{message.channel}' from '{message.author}': '{message.content}'")
+        async with self._app.db.session() as session:
+            user = await session.scalar(
+                select(User).where(User.discord_id == message.author.id)
+            )
+            if user is None:
+                user = User.from_discord(message.author)
+                session.add(user)
+            
+            _log.info(f"Received accountability message in '{message.channel}' from '{message.author}' ({user}): '{message.content}'")
+
+        
 
     @commands.hybrid_group()
     async def accountability(self, ctx: commands.Context):
