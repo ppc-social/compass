@@ -14,7 +14,7 @@ import discord
 from discord import ChannelType
 from discord.ext import commands
 from el.async_tools import synchronize
-from sqlalchemy import select
+from sqlmodel import select
 
 from compass_app.database import User
 from compass_app.config import CONFIG

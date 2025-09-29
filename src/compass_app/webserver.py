@@ -15,7 +15,6 @@ import typing
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
 from el.observable import filters
 from el.async_tools import synchronize

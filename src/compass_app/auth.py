@@ -14,7 +14,7 @@ import httpx
 from urllib.parse import urlencode
 from fastapi import Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlmodel import select
 
 from compass_app.config import CONFIG
 from compass_app.database import User
@@ -74,11 +74,11 @@ class CompassAuth():
 
             # Store user in DB
             async with app.db.session() as session:
-                user = await session.scalar(
+                user = (await session.exec(
                     select(User).where(User.discord_id == user_data["id"])
-                )
+                )).one_or_none()
 
-                if user:
+                if user is not None:
                     user.access_token = access_token
                 else:
                     user = User(
