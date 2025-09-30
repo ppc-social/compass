@@ -43,8 +43,6 @@ class DiscordBot(commands.Bot):
             **kwargs
         )
 
-        self.on_message_cb = CallbackManager[discord.Message]()
-
     async def run(self) -> None:
         async with self:
             self._app.exited >> filters.call_if_true(synchronize(self.close))
@@ -70,9 +68,6 @@ class DiscordBot(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         if message.author == self.user:
             return
-        
-        # notify other subsystems who need message callbacks
-        self.on_message_cb.notify_all(message)
 
         if message.content.startswith('Hello Loadstone'):
             await message.channel.send('Hello to the Compass community!')

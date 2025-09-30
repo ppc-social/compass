@@ -13,7 +13,7 @@ import logging
 import contextlib
 
 import discord
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy import String, BigInteger
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -28,12 +28,12 @@ if typing.TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class User(SQLModel, table=True):
+class CompassUser(SQLModel, table=True):
     """
     The user identifies a compass community member and is globally used
     by all subsystems.
     """
-    __tablename__ = "compass_users"
+    __tablename__ = "compass_user"
 
     id: int                     = Field(primary_key=True, index=True)
     discord_id: int             = Field(sa_type=BigInteger, unique=True, index=True)
@@ -46,11 +46,28 @@ class User(SQLModel, table=True):
     @classmethod
     def from_discord(cls, user: discord.User | discord.Member):
         """Initializes a user from a discord.py User or Member object"""
-        return User(
+        return CompassUser(
             discord_id=user.id,
             username=user.name,
             avatar=user.display_avatar.url,
         )
+
+    @classmethod
+    async def get_or_create_from_discord(
+        cls, 
+        session: AsyncSession, 
+        dc_user: discord.User | discord.Member
+    ):
+        """Gets or creates the DB user from the associated discord user"""
+        user = await session.scalar(
+            select(CompassUser).where(CompassUser.discord_id == dc_user.id)
+        )
+        if user is None:
+            user = CompassUser.from_discord(dc_user)
+            session.add(user)
+        return user
+
+
 
 
 class CompassDB:

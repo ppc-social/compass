@@ -22,6 +22,7 @@ from compass_app.auth import CompassAuth
 from compass_app.cli import CompassCLI
 from compass_app.sleep_tracking import SleepTracking
 from compass_app.habitica import CompassHabitica
+from compass_app.accountability.manager import AccountabilityManager
 
 
 _log = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ class CompassApp:
         self.auth = CompassAuth(self)
         self.bot = DiscordBot(self)
         self.sleep = SleepTracking(self)
+        self.accountability = AccountabilityManager(self)
         
         # setting up the parts of the application
         self.habitica = CompassHabitica(self)

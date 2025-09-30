@@ -17,7 +17,7 @@ from fastapi.responses import RedirectResponse
 from sqlmodel import select
 
 from compass_app.config import CONFIG
-from compass_app.database import User
+from compass_app.database import CompassUser
 
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
@@ -75,13 +75,13 @@ class CompassAuth():
             # Store user in DB
             async with app.db.session() as session:
                 user = (await session.exec(
-                    select(User).where(User.discord_id == user_data["id"])
+                    select(CompassUser).where(CompassUser.discord_id == user_data["id"])
                 )).one_or_none()
 
                 if user is not None:
                     user.access_token = access_token
                 else:
-                    user = User(
+                    user = CompassUser(
                         discord_id=user_data["id"],
                         username=user_data["username"],
                         discriminator=user_data["discriminator"],
