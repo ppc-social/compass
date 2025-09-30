@@ -44,6 +44,8 @@ class DiscordBot(commands.Bot):
         )
 
     async def run(self) -> None:
+        await self.add_cog(AccountabilityCommands(self._app))
+        
         async with self:
             self._app.exited >> filters.call_if_true(synchronize(self.close))
             await self.start(CONFIG.DISCORD_BOT_TOKEN)
@@ -61,8 +63,6 @@ class DiscordBot(commands.Bot):
     @typing.override
     async def on_ready(self):
         _log.info(f"logged in as {self.user}")
-
-        await self.add_cog(AccountabilityCommands(self._app))
 
     @typing.override
     async def on_message(self, message: discord.Message) -> None:

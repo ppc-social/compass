@@ -95,7 +95,7 @@ class CompassDB:
         if not await self._is_ready:
             raise RuntimeError("Cannot access database because it failed to initialize")
 
-        async with AsyncSession(self.engine) as session:
+        async with AsyncSession(self.engine, expire_on_commit=False) as session:
             async with session.begin():
                 yield session
     

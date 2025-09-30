@@ -22,5 +22,12 @@ The following section describes what permissions the bot needs and why.
 
 - Message Intent (Allowed to read messages)
   - Needed for accountability tracking
-- Read messages in threads
-  - Needed for accountability tracking
+- Manage Threads and Posts
+  - Needed for accountability thread management
+
+- Send Messages and Create Posts
+  - Needed for accountability announcements and thread creation
+<!-- - Read messages in threads
+  - Needed for accountability tracking -->
+- Embed Links
+  - Needed for accountability commands

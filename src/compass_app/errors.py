@@ -5,6 +5,3 @@ www.thecompass.diy
 
 custom error classes
 """
-
-class DuplicateError(Exception):
-    pass

@@ -1,0 +1,9 @@
+{
+    "accountability_command_roles": [],
+    "accountability_period_automation": true,
+    "accountability_period_weekday": 1,
+    "accountability_period_time": "19:45:00",
+    "accountability_scoring_automation": false,
+    "accountability_scoring_weekday": 0,
+    "accountability_scoring_time": "00:00:00"
+}
