@@ -38,7 +38,7 @@ class DiscordBot(commands.Bot):
         intents.message_content = True
 
         super().__init__(
-            command_prefix="!", 
+            command_prefix="ThIsWiLlNeVeRhApPeN",
             intents=intents, 
             **kwargs
         )
@@ -69,9 +69,10 @@ class DiscordBot(commands.Bot):
         if message.author == self.user:
             return
 
-        if message.content.startswith('Hello Loadstone'):
+        if message.content.startswith('Hello Lodestar'):
             await message.channel.send('Hello to the Compass community!')
 
-        await super().on_message(message)
+        # we skip the super call to disable prefix commands completely
+        #await super().on_message(message)
 
 

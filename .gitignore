@@ -5,3 +5,5 @@ __pycache__
 .env.development
 .env.production
 .direnv
+
+data/**

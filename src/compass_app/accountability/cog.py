@@ -7,6 +7,7 @@ discord Cog for accountability subsystem
 """
 
 import os
+import enum
 import typing
 import logging
 import asyncio
@@ -30,19 +31,24 @@ if typing.TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-NR_TO_WEEKDAY = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-]
+class TimeTransformer(app_commands.Transformer):
+    @typing.override
+    async def transform(
+        self, 
+        interaction: discord.Interaction, 
+        value: str
+    ) -> datetime.time:
+        return datetime.datetime.strptime(value, "%H:%M").time()
 
 
-def parse_time(time_str: str) -> datetime.time:
-    return datetime.datetime.strptime(time_str, "%H:%M").time()
+class Weekday(enum.Enum):
+    Monday = 0
+    Tuesday = 1
+    Wednesday = 2
+    Thursday = 3
+    Friday = 4
+    Saturday = 5
+    Sunday = 6
 
 
 class AccountabilityCommands(
@@ -57,17 +63,15 @@ class AccountabilityCommands(
         ## create webhooks for the accountability messages if they don't exist yet
         # self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID).webhooks
 
-    @commands.hybrid_group()
-    async def accountability(self, ctx: commands.Context):
-        """
-        Group for all accountability commands
-        """
-        pass
+    accountability = app_commands.Group(
+        name="accountability",
+        description="Commands for accountability tracking"
+    )
 
     @accountability.command()
     async def start_period(
         self, 
-        ctx: commands.Context,
+        interaction: discord.Interaction,
         week: int | None = None,
         year: int | None = None,
     ):
@@ -82,7 +86,7 @@ class AccountabilityCommands(
             Optional year of the week, by default the current year
         """
         # Thread creation might take a while
-        await ctx.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
 
         today = datetime.date.today()
         if year is None:
@@ -96,12 +100,12 @@ class AccountabilityCommands(
         try:
             thread = await self._app.accountability.start_period(week, year)
         except DuplicateError:
-            await ctx.reply(
+            await interaction.response.send_message(
                 f"A goal setting thread for week {week} of {year} already exists, can't create another one.",
                 ephemeral=True
             )
             return
-        await ctx.reply(
+        await interaction.response.send_message(
             f"Goal setting thread has been created: {thread.jump_url}",
             ephemeral=True
         )
@@ -109,7 +113,7 @@ class AccountabilityCommands(
     @accountability.command()
     async def end_period(
         self, 
-        ctx: commands.Context,
+        interaction: discord.Interaction,
         week: int | None = None,
         year: int | None = None,
     ):
@@ -124,7 +128,7 @@ class AccountabilityCommands(
             Optional year of the week, by default the current year
         """
         # Thread creation might take a while
-        await ctx.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
 
         today = datetime.date.today()
         if year is None:
@@ -138,19 +142,19 @@ class AccountabilityCommands(
         try:
             thread = await self._app.accountability.end_period(week, year)
         except IndexError:
-            await ctx.reply(
+            await interaction.response.send_message(
                 f"No accountability period exists for week {week} of {year} so it can't be ended.",
                 ephemeral=True
             )
             return
         except DuplicateError:
-            await ctx.reply(
+            await interaction.response.send_message(
                 f"The accountability period for week {week} of {year} has already ended and a thread already exists, can't create another one.",
                 ephemeral=True
             )
             return
-
-        await ctx.reply(
+        
+        await interaction.response.send_message(
             f"Results thread has been created: {thread.jump_url}",
             ephemeral=True
         )
@@ -158,7 +162,7 @@ class AccountabilityCommands(
     @accountability.command()
     async def reset_period(
         self, 
-        ctx: commands.Context,
+        interaction: discord.Interaction,
         week: int,
         year: int,
         delete_threads: bool = False,
@@ -176,7 +180,7 @@ class AccountabilityCommands(
             Whether to also delete the discord threads or just the internal record (false by default)
         """
         # Thread deletion might take a while
-        await ctx.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
 
         async with self._app.db.session() as session:
             # find the period
@@ -187,7 +191,7 @@ class AccountabilityCommands(
                 )
             )).one_or_none()
             if period is None:
-                await ctx.reply(
+                await interaction.response.send_message(
                     f"No accountability period exists for week {week} of {year} so it can't be reset.",
                     ephemeral=True
                 )
@@ -218,7 +222,7 @@ class AccountabilityCommands(
                                 await msg.delete()
 
                 except discord.errors.Forbidden as e:
-                    await ctx.reply(
+                    await interaction.response.send_message(
                         f"Failed to delete threads: {e}",
                         ephemeral=True
                     )
@@ -226,27 +230,18 @@ class AccountabilityCommands(
 
             await session.delete(period)
 
-        await ctx.reply(
+        await interaction.response.send_message(
             f"Accountability for week {week} of year {year} has been reset{", threads have been deleted." if delete_threads else "."}",
             ephemeral=True
         )
 
     @accountability.command()
-    @app_commands.choices(weekday=[
-        app_commands.Choice(name="Monday", value=0),
-        app_commands.Choice(name="Tuesday", value=1),
-        app_commands.Choice(name="Wednesday", value=2),
-        app_commands.Choice(name="Thursday", value=3),
-        app_commands.Choice(name="Friday", value=4),
-        app_commands.Choice(name="Saturday", value=5),
-        app_commands.Choice(name="Sunday", value=6),
-    ])
     async def automation(
         self, 
-        ctx: commands.Context,
+        interaction: discord.Interaction,
         enabled: bool | None = None,
-        weekday: app_commands.Choice[int] | None = None,
-        time: datetime.time | None = commands.parameter(default=None, converter=parse_time),
+        weekday: Weekday | None = None,
+        time: app_commands.Transform[datetime.time, TimeTransformer] | None = None,
     ):
         """
         Shows or configures the automatic accountability thread creation parameters.
@@ -269,8 +264,8 @@ class AccountabilityCommands(
 
         self._app.settings.model_save_to_disk()
 
-        await ctx.reply(
-            f"Automatic accountability period creation at {self._app.settings.accountability_period_time.strftime("%H:%M")} every {NR_TO_WEEKDAY[self._app.settings.accountability_period_weekday]} is {"enabled :green_square:" if self._app.settings.accountability_period_automation else "disabled :red_square:"}.",
+        await interaction.response.send_message(
+            f"Automatic accountability period creation at {self._app.settings.accountability_period_time.strftime("%H:%M")} every {Weekday(self._app.settings.accountability_period_weekday).name} is {"enabled :green_square:" if self._app.settings.accountability_period_automation else "disabled :red_square:"}.",
             ephemeral=True,
         )
 
