@@ -12,4 +12,4 @@ RUN poetry install
 
 WORKDIR /app/src
 
-ENTRYPOINT ["poetry", "run", "python", "-m", "compass_app"]
+ENTRYPOINT ["poetry", "run", "python", "-m", "compass_app.main"]
