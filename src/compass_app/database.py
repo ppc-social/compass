@@ -75,6 +75,7 @@ class CompassDB:
     def __init__(self, app: "CompassApp"):
         self._app = app
         self.engine = create_async_engine(CONFIG.DB_URL)
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
         
         self._is_ready: asyncio.Future[bool] = asyncio.get_event_loop().create_future()
 

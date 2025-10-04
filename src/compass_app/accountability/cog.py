@@ -100,12 +100,12 @@ class AccountabilityCommands(
         try:
             thread = await self._app.accountability.start_period(week, year)
         except DuplicateError:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"A goal setting thread for week {week} of {year} already exists, can't create another one.",
                 ephemeral=True
             )
             return
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Goal setting thread has been created: {thread.jump_url}",
             ephemeral=True
         )
@@ -142,19 +142,19 @@ class AccountabilityCommands(
         try:
             thread = await self._app.accountability.end_period(week, year)
         except IndexError:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"No accountability period exists for week {week} of {year} so it can't be ended.",
                 ephemeral=True
             )
             return
         except DuplicateError:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"The accountability period for week {week} of {year} has already ended and a thread already exists, can't create another one.",
                 ephemeral=True
             )
             return
         
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Results thread has been created: {thread.jump_url}",
             ephemeral=True
         )
@@ -191,7 +191,7 @@ class AccountabilityCommands(
                 )
             )).one_or_none()
             if period is None:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     f"No accountability period exists for week {week} of {year} so it can't be reset.",
                     ephemeral=True
                 )
@@ -222,7 +222,7 @@ class AccountabilityCommands(
                                 await msg.delete()
 
                 except discord.errors.Forbidden as e:
-                    await interaction.response.send_message(
+                    await interaction.followup.send(
                         f"Failed to delete threads: {e}",
                         ephemeral=True
                     )
@@ -230,7 +230,7 @@ class AccountabilityCommands(
 
             await session.delete(period)
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Accountability for week {week} of year {year} has been reset{", threads have been deleted." if delete_threads else "."}",
             ephemeral=True
         )
@@ -285,6 +285,7 @@ class AccountabilityCommands(
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        # some pre-filtering to avoid frequent database queries
         if not self._is_relevante_message(message):
             return
 
@@ -300,30 +301,112 @@ class AccountabilityCommands(
             if period is None:
                 # message not associated with any accountability thread -> ignore it
                 return
+            
+            # get the user and entry associated with the message
+            user = await CompassUser.get_or_create_from_discord(session, message.author)
+            entry = await AccountabilityEntry.get_or_create(session, period, user)
+            
+            _log.info(f"Received accountability message in '{message.channel}' from '{message.author}' ({user}): '{message.content}'")
 
             # goal setting message
             if period.goal_channel_id == message.channel.id:
-                # TODO: continue here
-                ...
+                # If the user posts a second message here, we ignore it
+                goal: AccountabilityGoal | None = await entry.awaitable_attrs.goal
+                if goal is not None:
+                    _log.warning(f"Duplicate accountability goal for {user.username} in period {period}, ignoring")
+                    return
+                
+                # otherwise save the goal
+                entry.goal = AccountabilityGoal(
+                    message_id=message.id,
+                    text=message.content,
+                )
+                session.add(entry)
+                return
 
             # result message
             else:
-                ...
-
-            user = await CompassUser.get_or_create_from_discord(session, message.author)
-
-            _log.info(f"Received accountability message in '{message.channel}' from '{message.author}' ({user}): '{message.content}'")
+                # If the user posts a second message here, we ignore it
+                result: AccountabilityResult | None = await entry.awaitable_attrs.result
+                if result is not None:
+                    _log.warning(f"Duplicate accountability result for {user.username} in period {period}, ignoring")
+                    return
+                
+                # otherwise save the result
+                entry.result = AccountabilityResult(
+                    message_id=message.id,
+                    text=message.content,
+                )
+                entry.result.update_count()
+                session.add(entry)
+                return
 
     @commands.Cog.listener()
-    async def on_message_edit(self, old: discord.Message, new: discord.Message):
+    #async def on_message_edit(self, old: discord.Message, new: discord.Message):
+    # we use raw message edit to also detect old messages being edited that are not in our local cache
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        new = payload.message
+        # some pre-filtering to avoid frequent database queries
         if not self._is_relevante_message(new):
             return
+        
+        async with self._app.db.session() as session:
+            # find the message if it is a recorded goal
+            goal = (await session.exec(
+                select(AccountabilityGoal).where(
+                    AccountabilityGoal.message_id == new.id
+                )
+            )).one_or_none()
 
-        _log.info(f"Message edit: {old.content} ({old.id}) -> {new.content} ({new.id})")
+            if goal is not None:
+                _log.info(f"Accountability goal of {new.author.name} updated.")
+                goal.text = new.content
+                session.add(goal)
+                return
+                
+            # or if it is a recorded result
+            result = (await session.exec(
+                select(AccountabilityResult).where(
+                    AccountabilityResult.message_id == new.id
+                )
+            )).one_or_none()
+
+            if result is not None:
+                _log.info(f"Accountability result of {new.author.name} updated.")
+                result.text = new.content   # This may cause a problem according to docs, but we haven't yet observed any issues
+                result.update_count()
+                session.add(result)
+                return
 
     @commands.Cog.listener()
-    async def on_message_delete(self, old: discord.Message):
-        if not self._is_relevante_message(old):
+    #async def on_message_delete(self, old: discord.Message):
+    # we use raw message delete to also detect old messages being deleted that are not in our local cache
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        # some pre-filtering to avoid frequent database queries
+        if payload.cached_message is not None and not self._is_relevante_message(payload.cached_message):
             return
+        
+        async with self._app.db.session() as session:
+            # find the message if it is a recorded goal
+            goal = (await session.exec(
+                select(AccountabilityGoal).where(
+                    AccountabilityGoal.message_id == payload.message_id
+                )
+            )).one_or_none()
 
-        _log.info(f"Message delete: {old.content}")
+            if goal is not None:
+                _log.info(f"Accountability goal (message {payload.message_id}) deleted.")
+                await session.delete(goal)
+                return
+                
+            # or if it is a recorded result
+            result = (await session.exec(
+                select(AccountabilityResult).where(
+                    AccountabilityResult.message_id == payload.message_id
+                )
+            )).one_or_none()
+
+            if result is not None:
+                _log.info(f"Accountability result (message {payload.message_id}) deleted.")
+                await session.delete(result)
+                return

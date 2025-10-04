@@ -6,8 +6,13 @@ www.thecompass.diy
 database tables for accountability tracking
 """
 
+from typing import Optional
+
+import discord
 from datetime import date, datetime, timezone, timedelta
-from sqlmodel import SQLModel, Field, Relationship, BigInteger
+from sqlmodel import SQLModel, Field, Relationship, BigInteger, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncAttrs
 
 from compass_app.database import CompassUser
 
@@ -75,7 +80,7 @@ class AccountabilityPeriod(SQLModel, table=True):
         )
 
 
-class AccountabilityEntry(SQLModel, table=True):
+class AccountabilityEntry(AsyncAttrs, SQLModel, table=True):
     __tablename__ = "accountability_entry"
     id: int = Field(primary_key=True)
 
@@ -85,11 +90,33 @@ class AccountabilityEntry(SQLModel, table=True):
     period_id: int = Field(foreign_key="accountability_period.id")
     period: AccountabilityPeriod = Relationship(back_populates="entries")
     
-    goal_id: int = Field(foreign_key="accountability_goal.id")
-    goal: "AccountabilityGoal" = Relationship(back_populates="entry")
+    goal_id: int | None = Field(foreign_key="accountability_goal.id", default=None)
+    goal: Optional["AccountabilityGoal"] = Relationship(back_populates="entry")
 
-    result_id: int = Field(foreign_key="accountability_result.id")
-    result: "AccountabilityResult" = Relationship(back_populates="entry")
+    result_id: int | None = Field(foreign_key="accountability_result.id", default=None)
+    result: Optional["AccountabilityResult"] = Relationship(back_populates="entry")
+
+    @classmethod
+    async def get_or_create(
+        cls, 
+        session: AsyncSession,
+        period: AccountabilityPeriod,
+        user: CompassUser,
+    ):
+        """Gets or creates an entry matching a user and period"""
+        entry = await session.scalar(
+            select(AccountabilityEntry).where(
+                AccountabilityEntry.user == user,
+                AccountabilityEntry.period == period
+            )
+        )
+        if entry is None:
+            entry = AccountabilityEntry(
+                user=user,
+                period=period,
+            )
+            session.add(entry)
+        return entry
 
 
 class AccountabilityGoal(SQLModel, table=True):
@@ -98,9 +125,7 @@ class AccountabilityGoal(SQLModel, table=True):
     
     message_id: int = Field(sa_type=BigInteger, index=True)
     text: str
-    deleted: bool = False
-    time_set: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc))
-    time_modified: datetime | None
+    date_created: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     entry: AccountabilityEntry = Relationship(back_populates="goal")
 
@@ -109,12 +134,24 @@ class AccountabilityResult(SQLModel, table=True):
     __tablename__ = "accountability_result"
     id: int = Field(primary_key=True)
     
-    result_message_id: int | None = Field(sa_type=BigInteger, default=None, index=True)
-    result_message_text: str = ""
-    result_message_deleted: bool = False
+    message_id: int | None = Field(sa_type=BigInteger, default=None, index=True)
+    text: str = ""
     success_count: int | None = None
     fail_count: int | None = None
-    date_completed: datetime | None
+    date_created: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     entry: AccountabilityEntry = Relationship(back_populates="result")
 
+    def update_count(self) -> None:
+        """Updates success and fail count from text"""
+        self.success_count = 0
+        self.fail_count = 0
+        # count both the discord or unicode representation of the emojis 
+        self.success_count += self.text.count(":white_check_mark:")
+        self.success_count += self.text.count("✅")
+        self.fail_count += self.text.count(":x:")
+        self.fail_count += self.text.count("❌")
+
+    @property
+    def ratio(self) -> float:
+        return self.success_count / (self.success_count + self.fail_count)

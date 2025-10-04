@@ -55,7 +55,7 @@ class CompassApp:
         self.exited = Observable[bool](False)
 
         # load dynamic settings file
-        CONFIG.SETTINGS_FILE.mkdir(parents=True, exist_ok=True)
+        CONFIG.SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.settings = Settings.model_load_from_disk(CONFIG.SETTINGS_FILE)
         except:
