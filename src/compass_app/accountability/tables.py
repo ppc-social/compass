@@ -135,11 +135,11 @@ class AccountabilityResult(SQLModel, table=True):
     __tablename__ = "accountability_result"
     id: int = Field(primary_key=True)
     
-    message_id: int | None = Field(sa_type=BigInteger, default=None, index=True)
+    message_id: int = Field(sa_type=BigInteger, default=None, index=True)
     text: str = ""
-    success_count: int | None = None
-    fail_count: int | None = None
-    date_created: datetime | None = Field(default_factory=lambda: datetime.now(timezone.utc))
+    success_count: int = 0
+    fail_count: int = 0
+    date_created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     entry: AccountabilityEntry = Relationship(back_populates="result")
 
@@ -155,4 +155,8 @@ class AccountabilityResult(SQLModel, table=True):
 
     @property
     def ratio(self) -> float:
-        return self.success_count / (self.success_count + self.fail_count)
+        return (
+            (self.success_count / (self.success_count + self.fail_count))
+            if self.fail_count > 0 
+            else 0
+        )
