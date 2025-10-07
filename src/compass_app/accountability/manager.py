@@ -16,7 +16,6 @@ from discord import Thread, ChannelType
 from el.errors import DuplicateError
 from el.async_tools import synchronize
 
-from compass_app.config import CONFIG
 from .tables import *
 
 if typing.TYPE_CHECKING:
@@ -185,7 +184,7 @@ class AccountabilityManager():
             period = AccountabilityPeriod.from_week(year, week)
             
             # create thread and send some initial message to inform people about what to do
-            channel = self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID)
+            channel = self._app.bot.get_channel(self._app.config.accountability_channel_id)
             assert channel is not None, "Accountability channel must exits"
             thread = await channel.create_thread(
                 name=f"Week {week} Accountability Setting 🎯",
@@ -193,7 +192,7 @@ class AccountabilityManager():
             )
             await thread.send(
                 f"""
-                ## :information_source:  Tell us about the goals you want to be held accountable for by the community in week 39 of 2025 (1 message per user only).
+                ## :information_source:  Tell us about the goals you want to be held accountable for by the community in week {week} of {year} (1 message per user only).
 
                 ## :sunny:  Whether you want to take a break, keep the same habit or start a new initiative the community accountability is here for you.
                 """
@@ -248,7 +247,7 @@ class AccountabilityManager():
                 raise DuplicateError("Period has already ended")
 
             # create result thread and send some initial message to inform people about what to do
-            channel = self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID)
+            channel = self._app.bot.get_channel(self._app.config.accountability_channel_id)
             assert channel is not None, "Accountability channel must exits"
             thread = await channel.create_thread(
                 name=f"Week {week} Accountability Check In ✅❌",

@@ -1,9 +1,11 @@
 
 __pycache__
+*.egg-info
 /gitignore
 .env
 .env.development
 .env.production
 .direnv
-
+.venv
+build
 data/**

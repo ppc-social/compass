@@ -19,7 +19,6 @@ from sqlalchemy import String, BigInteger
 from sqlalchemy.ext.asyncio import create_async_engine
 from el.async_tools import synchronize
 
-from compass_app.config import CONFIG
 
 if typing.TYPE_CHECKING:
     from compass_app.main import CompassApp
@@ -74,7 +73,7 @@ class CompassDB:
 
     def __init__(self, app: "CompassApp"):
         self._app = app
-        self.engine = create_async_engine(CONFIG.DB_URL)
+        self.engine = create_async_engine(self._app.config.db_url)
         logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
         
         self._is_ready: asyncio.Future[bool] = asyncio.get_event_loop().create_future()

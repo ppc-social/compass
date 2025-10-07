@@ -10,15 +10,16 @@ Compass Bot/Application
 from el import terminal
 _term = terminal.setup_simple_terminal()
 
+import os
 import asyncio
 import logging
 from pathlib import Path
 from tap import tapify
 from el import terminal
 from el.observable import Observable, filters
+from el.path_utils import abspath
 
-from compass_app.config import CONFIG
-from compass_app.settings import Settings
+from compass_app.config import Config, Settings
 from compass_app.dcbot import DiscordBot
 from compass_app.database import CompassDB
 from compass_app.webserver import CompassWeb
@@ -36,37 +37,45 @@ class CompassApp:
 
     def __init__(
         self,
-        #data: Path,
-        #config: Path | None = None,
-        #host: str = "0.0.0.0",
-        #port: int = 8080,
+        data: Path = Path("data"),
+        config: Path = Path("data/config.json"),
+        settings: Path = Path("data/config.json"),
+        db: str = "",
     ):
         """
         Compass Community application server. This hosts the Compass community
         discord bot and other possibly integrations like webapp or third-party
         systems.
 
-        Static configuration is supplied via environment variables, modifiable
-        settings are loaded from the specified settings file.
-        
+        Static configuration is supplied via a single JSON config file,
+        modifiable settings are loaded and stored in a separate JSON file.
+
+        Parameters
+        ----------
+        data : Path, optional
+            A folder where user generated data files are stored.
+        config : Path, optional
+            Static configuration JSON file. Must be at least readable.
+        settings : Path, optional
+            A JSON file for modifiable settings. Must be readable and writable.
+        db : str, optional
+            Path to the sqlite database file for storing relational user data.
         """
 
         # flag set to quit application
         self.exited = Observable[bool](False)
 
-        # load dynamic settings file
-        CONFIG.SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            self.settings = Settings.model_load_from_disk(CONFIG.SETTINGS_FILE)
-        except:
-            # move erroneous file away if it exists
-            if CONFIG.SETTINGS_FILE.is_file():
-                CONFIG.SETTINGS_FILE.rename(CONFIG.SETTINGS_FILE.with_name(CONFIG.SETTINGS_FILE.name + ".error.bak"))
-            # create new default config file
-            self.settings = Settings()
-            self.settings.model_save_to_disk_as(CONFIG.SETTINGS_FILE)
-            
+        # save expanded paths
+        self.data_path = abspath(data)
+        self._config_path = abspath(config)
+        self._settings_path = abspath(settings)
+        self._db_path = abspath(db)
 
+        # load static config and dynamic settings file
+        self.config = Config.model_load_from_disk(self._config_path)
+        self.settings = Settings.model_load_from_disk(self._settings_path, create_if_missing=True)
+
+        # core subsystems
         # db needs to be setup first, so that everything else can use it
         self.db = CompassDB(self)
         self.web = CompassWeb(self)
@@ -74,6 +83,7 @@ class CompassApp:
         self.bot = DiscordBot(self)
         self.cli = CompassCLI(self)
 
+        # application modules
         self.accountability = AccountabilityManager(self)
         self.sleep = SleepTracking(self)
         self.habitica = CompassHabitica(self)
@@ -111,5 +121,8 @@ async def main() -> int:
     
     return 0
 
-if __name__ == "__main__":
+def entry():
     exit(asyncio.run(main()))
+
+if __name__ == "__main__":
+    entry()

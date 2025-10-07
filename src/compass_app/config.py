@@ -7,47 +7,46 @@ Centralized place to define and load configuration
 """
 
 import os
-import pydantic
-
-from dotenv import load_dotenv
-from pathlib import Path
-
-# load environment for other modules to use
-load_dotenv(dotenv_path=Path(".env.development"), override=True)
+from pydantic import Field
+from datetime import time
+from el.datastore import SavableModel
 
 
-class Config(pydantic.BaseModel):
-    SETTINGS_FILE: Path
+class Config(SavableModel):
+    model_config = {
+        "savable_default_dump_options": {
+            "indent": 4
+        },
+        # config contains static, immutable settings, this must not be modifiable
+        "frozen": True,
+    }
 
-    DISCORD_BOT_TOKEN: str
-    DISCORD_GUILD_ID: int
-    DISCORD_CLIENT_ID: str
-    DISCORD_CLIENT_SECRET: str
-    DISCORD_REDIRECT_URL: str
+    discord_bot_token: str
+    discord_guild_id: int
+    discord_client_id: str
+    discord_client_secret: str
+    discord_redirect_url: str
     
-    WEB_HOST: str
-    WEB_PORT: int
+    web_host: str
+    web_port: int
     
-    DB_URL: str
-    DISABLE_DB_IN_SHELL: bool
+    db_url: str
 
-    ACCOUNTABILITY_CHANNEL_ID: int
+    accountability_channel_id: int
 
 
-CONFIG = Config(
-    SETTINGS_FILE               = os.getenv("SETTINGS_FILE"),
+class Settings(SavableModel):
+    model_config = {
+        "savable_default_dump_options": {
+            "indent": 4
+        }
+    }
 
-    DISCORD_BOT_TOKEN           = os.getenv("DISCORD_BOT_TOKEN"),
-    DISCORD_GUILD_ID            = os.getenv("DISCORD_GUILD_ID"),
-    DISCORD_CLIENT_ID           = os.getenv("DISCORD_CLIENT_ID"),
-    DISCORD_CLIENT_SECRET       = os.getenv("DISCORD_CLIENT_SECRET"),
-    DISCORD_REDIRECT_URL        = os.getenv("DISCORD_REDIRECT_URL"),
-
-    WEB_HOST                    = os.getenv("WEB_HOST"),
-    WEB_PORT                    = os.getenv("WEB_PORT"),
-    
-    DB_URL                      = os.getenv("DB_URL"),
-    DISABLE_DB_IN_SHELL         = os.getenv("DISABLE_DB_IN_SHELL"),
-    
-    ACCOUNTABILITY_CHANNEL_ID   = os.getenv("ACCOUNTABILITY_CHANNEL_ID"),
-)
+    # settings for automated accountability period creation/ending
+    accountability_period_automation: bool = False
+    accountability_period_weekday: int = 0
+    accountability_period_time: time = Field(default_factory=time)
+    # settings for automated accountability period scoring
+    accountability_scoring_automation: bool = False
+    accountability_scoring_weekday: int = 0
+    accountability_scoring_time: time = Field(default_factory=time)

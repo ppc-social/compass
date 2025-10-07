@@ -22,7 +22,6 @@ from el.errors import DuplicateError
 from sqlmodel import select, or_
 
 from compass_app.database import CompassUser
-from compass_app.config import CONFIG
 from .tables import AccountabilityPeriod, AccountabilityEntry, AccountabilityGoal, AccountabilityResult
 
 if typing.TYPE_CHECKING:
@@ -61,7 +60,7 @@ class AccountabilityCommands(
         self._app = app
 
         ## create webhooks for the accountability messages if they don't exist yet
-        # self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID).webhooks
+        # self._app.bot.get_channel(self._app.config.accountability_channel_id).webhooks
 
     accountability = app_commands.Group(
         name="accountability",
@@ -205,7 +204,7 @@ class AccountabilityCommands(
                         if ch is not None:
                             await ch.delete()
                         # delete starter message
-                        ach = self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID)
+                        ach = self._app.bot.get_channel(self._app.config.accountability_channel_id)
                         if ach is not None:
                             msg = await ach.fetch_message(period.goal_channel_id) # has same ID as thread
                             if msg is not None:
@@ -215,7 +214,7 @@ class AccountabilityCommands(
                         if ch is not None:
                             await ch.delete()
                         # delete starter message
-                        ach = self._app.bot.get_channel(CONFIG.ACCOUNTABILITY_CHANNEL_ID)
+                        ach = self._app.bot.get_channel(self._app.config.accountability_channel_id)
                         if ach is not None:
                             msg = await ach.fetch_message(period.result_channel_id) # has same ID as thread
                             if msg is not None:
@@ -278,7 +277,7 @@ class AccountabilityCommands(
         if message.channel.type not in (ChannelType.public_thread, ChannelType.private_thread):
             return False
         channel = message.channel.parent
-        if channel is None or channel.id != CONFIG.ACCOUNTABILITY_CHANNEL_ID:
+        if channel is None or channel.id != self._app.config.accountability_channel_id:
             return False
 
         return True

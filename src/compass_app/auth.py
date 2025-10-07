@@ -16,7 +16,6 @@ from fastapi import Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlmodel import select
 
-from compass_app.config import CONFIG
 from compass_app.database import CompassUser
 
 if typing.TYPE_CHECKING:
@@ -37,8 +36,8 @@ class CompassAuth():
         @app.web.get("/login")
         async def login():
             params = {
-                "client_id": CONFIG.DISCORD_CLIENT_ID,
-                "redirect_uri": CONFIG.DISCORD_REDIRECT_URL,
+                "client_id": self._app.config.discord_client_id,
+                "redirect_uri": self._app.config.discord_redirect_url,
                 "response_type": "code",
                 "scope": "identify email",
             }
@@ -48,11 +47,11 @@ class CompassAuth():
         async def callback(code: str):
             # Exchange code for token
             data = {
-                "client_id": CONFIG.DISCORD_CLIENT_ID,
-                "client_secret": CONFIG.DISCORD_CLIENT_SECRET,
+                "client_id": self._app.config.discord_client_id,
+                "client_secret": self._app.config.discord_client_secret,
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": CONFIG.DISCORD_REDIRECT_URL,
+                "redirect_uri": self._app.config.discord_redirect_url,
             }
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
