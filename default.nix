@@ -12,17 +12,14 @@ python313Packages.buildPythonApplication
   src = ./.;
 
   propagatedBuildInputs = with python313Packages; [
-    
     discordpy
-    pydantic
-    fastapi
-    mariadb
+    aiosqlite
     sqlalchemy
     sqlmodel
+    pydantic
+    fastapi
     httpx
-    asyncmy
     uvicorn
-    python-dotenv
 
     # packages not in nixpkgs
     el_std_py

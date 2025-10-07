@@ -10,6 +10,7 @@ import os
 from pydantic import Field
 from datetime import time
 from el.datastore import SavableModel
+from el.terminal import LogLevel
 
 
 class Config(SavableModel):
@@ -30,8 +31,6 @@ class Config(SavableModel):
     web_host: str
     web_port: int
     
-    db_url: str
-
     accountability_channel_id: int
 
 
@@ -41,6 +40,8 @@ class Settings(SavableModel):
             "indent": 4
         }
     }
+
+    sqlalchemy_log_level: LogLevel = "WARNING"
 
     # settings for automated accountability period creation/ending
     accountability_period_automation: bool = False

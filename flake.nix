@@ -31,15 +31,13 @@
             pkgs.python313
 
             pkgs.python313Packages.discordpy
-            pkgs.python313Packages.pydantic
-            pkgs.python313Packages.fastapi
-            pkgs.python313Packages.mariadb
+            pkgs.python313Packages.aiosqlite
             pkgs.python313Packages.sqlalchemy
             pkgs.python313Packages.sqlmodel
+            pkgs.python313Packages.pydantic
+            pkgs.python313Packages.fastapi
             pkgs.python313Packages.httpx
-            pkgs.python313Packages.asyncmy
             pkgs.python313Packages.uvicorn
-            pkgs.python313Packages.python-dotenv
 
             # packages not in nixpkgs
             inputs.el_std_py.packages."${system}".default

@@ -40,7 +40,7 @@ class CompassApp:
         data: Path = Path("data"),
         config: Path = Path("data/config.json"),
         settings: Path = Path("data/config.json"),
-        db: str = "",
+        db: Path = Path("data/compass.db"),
     ):
         """
         Compass Community application server. This hosts the Compass community
@@ -69,7 +69,7 @@ class CompassApp:
         self.data_path = abspath(data)
         self._config_path = abspath(config)
         self._settings_path = abspath(settings)
-        self._db_path = abspath(db)
+        self.db_path = abspath(db)
 
         # load static config and dynamic settings file
         self.config = Config.model_load_from_disk(self._config_path)

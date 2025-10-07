@@ -38,11 +38,17 @@ class CompassWeb(FastAPI):
             return "Welcome to the compass app..."
     
     async def run(self) -> None:
+
         config = uvicorn.Config(
             self, 
             host=self._app.config.web_host,
             port=self._app.config.web_port, 
-            log_level="info"
+            log_level="info",
+            # remove the uvicorn internal logging handlers,
+            # as we have our own logging handler.
+            # This might not be ideal for access log, so we may
+            # need to add a better handler for access log in the future
+            log_config=None,
         )
         server = uvicorn.Server(config)
 

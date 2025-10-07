@@ -73,8 +73,11 @@ class CompassDB:
 
     def __init__(self, app: "CompassApp"):
         self._app = app
-        self.engine = create_async_engine(self._app.config.db_url)
-        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+        self._app.db_path.parent.mkdir(exist_ok=True, parents=True)
+        self.engine = create_async_engine(f"sqlite+aiosqlite:///{self._app.db_path}")
+        logging.getLogger('sqlalchemy.engine').setLevel(
+            self._app.settings.sqlalchemy_log_level
+        )
         
         self._is_ready: asyncio.Future[bool] = asyncio.get_event_loop().create_future()
 
@@ -111,7 +114,7 @@ class CompassDB:
             # set db as ready so other subsystems can use it
             self._is_ready.set_result(True)
         except Exception as e:
-            _log.warning(f"DB initialization failed: {e}")
+            _log.warning(f"DB initialization failed: {e}", exc_info=e)
             _log.warning("Subsystems that require the DB will not work.")
             self._is_ready.set_result(False)
             
