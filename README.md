@@ -67,8 +67,6 @@ Before running, it is required to create the static configuration file. By defau
     "web_host": "localhost",
     "web_port": 3000,
     
-    "db_url": "mysql+asyncmy://root:example@localhost/ppc",
-
     "accountability_channel_id": ...
 }
 ```

@@ -39,7 +39,7 @@ class CompassApp:
         self,
         data: Path = Path("data"),
         config: Path = Path("data/config.json"),
-        settings: Path = Path("data/config.json"),
+        settings: Path = Path("data/settings.json"),
         db: Path = Path("data/compass.db"),
     ):
         """
