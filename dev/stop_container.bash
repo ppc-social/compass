@@ -1,1 +1,0 @@
-$DOCKER_CMD stop $container_id
