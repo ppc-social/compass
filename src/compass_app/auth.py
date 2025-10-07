@@ -1,34 +1,43 @@
+"""
+The Compass Community © 2025 - now
+www.thecompass.diy
+07.09.25, 18:49
 
+User authentication portal to access the web-app.
+"""
 
 import os
-from fastapi import Depends, HTTPException
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi.responses import RedirectResponse
-from urllib.parse import urlencode
+import typing
+import logging
+
 import httpx
+from urllib.parse import urlencode
+from fastapi import Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from sqlmodel import select
+
+from compass_app.database import CompassUser
+
+if typing.TYPE_CHECKING:
+    from compass_app.main import CompassApp
+
+_log = logging.getLogger(__name__)
 
 
 class CompassAuth():
-    DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
-    DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
-    DISCORD_REDIRECT_URL = os.getenv("DISCORD_REDIRECT_URL")
 
     DISCORD_AUTH_URL = "https://discord.com/api/oauth2/authorize"
     DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
     DISCORD_API_URL = "https://discord.com/api/users/@me"
 
-    def __init__(self, app):
-
-        @app.web.on_event("startup")
-        async def startup():
-            async with app.db.engine.begin() as conn:
-                await conn.run_sync(app.db.Base.metadata.create_all)
+    def __init__(self, app: "CompassApp"):
+        self._app = app
 
         @app.web.get("/login")
         async def login():
             params = {
-                "client_id": self.DISCORD_CLIENT_ID,
-                "redirect_uri": self.DISCORD_REDIRECT_URL,
+                "client_id": self._app.config.discord_client_id,
+                "redirect_uri": self._app.config.discord_redirect_url,
                 "response_type": "code",
                 "scope": "identify email",
             }
@@ -38,11 +47,11 @@ class CompassAuth():
         async def callback(code: str):
             # Exchange code for token
             data = {
-                "client_id": self.DISCORD_CLIENT_ID,
-                "client_secret": self.DISCORD_CLIENT_SECRET,
+                "client_id": self._app.config.discord_client_id,
+                "client_secret": self._app.config.discord_client_secret,
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": self.DISCORD_REDIRECT_URL,
+                "redirect_uri": self._app.config.discord_redirect_url,
             }
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -63,24 +72,25 @@ class CompassAuth():
                 user_data = user_resp.json()
 
             # Store user in DB
-            existing_user = await app.db.session.execute(
-                app.db.User.__table__.select().where(app.db.User.discord_id == str(user_data["id"]))
-            )
-            user = existing_user.scalar_one_or_none()
+            async with app.db.session() as session:
+                user = (await session.exec(
+                    select(CompassUser).where(CompassUser.discord_id == user_data["id"])
+                )).one_or_none()
 
-            if user:
-                user.access_token = access_token
-            else:
-                user = app.db.User(
-                    discord_id=str(user_data["id"]),
-                    username=user_data["username"],
-                    discriminator=user_data["discriminator"],
-                    avatar=user_data["avatar"],
-                    access_token=access_token,
-                    refresh_token=token_data.get("refresh_token")
-                )
-                app.db.session.add(user)
-
-            await app.db.session.commit()
+                if user is not None:
+                    user.access_token = access_token
+                else:
+                    user = CompassUser(
+                        discord_id=user_data["id"],
+                        username=user_data["username"],
+                        discriminator=user_data["discriminator"],
+                        avatar=user_data["avatar"],
+                        access_token=access_token,
+                        refresh_token=token_data.get("refresh_token")
+                    )
+                    session.add(user)
 
             return {"message": "Logged in successfully", "user": user_data}
+
+    async def run(self) -> None:
+        ...

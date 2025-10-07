@@ -3,25 +3,18 @@ name = "compass-app"
 version = "0.1.0"
 description = "Discord bot + web app for https://thecompass.diy"
 authors = [
-    {name = "Sebastian Moser",email = "sebastian@c2vi.dev"}
+    {name = "Sebastian Moser",email = "sebastian@c2vi.dev"},
+    {name = "melektron",email = "matteo@elektron.work"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
-dependencies = [
-    "discord-py (>=2.5.2,<3.0.0)",
-    "mariadb (>=1.1.13,<2.0.0)",
-    "sqlalchemy (>=2.0.41,<3.0.0)",
-    "fastapi (>=0.116.1,<0.117.0)",
-    "httpx (>=0.28.1,<0.29.0)",
-    "asyncmy (>=0.2.10,<0.3.0)",
-    "uvicorn (>=0.35.0,<0.36.0)",
-    "dotenv (>=0.9.9,<0.10.0)",
-]
+requires-python = ">=3.13,<4.0"
+# this is done by default.nix:
+#dependencies = [
+#]
 
-[tool.poetry]
-packages = []
-
+[project.scripts]
+compass_app = "compass_app.main:entry"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools >= 61.0.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
